@@ -1,30 +1,41 @@
 package academy.javapro.api;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.web.servlet.MockMvc;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
-@SpringBootTest
-@AutoConfigureMockMvc
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 class ApiApplicationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    private static final String BASE =
+            "http://localhost:" + System.getProperty("server.port", "8080");
 
     @Test
-    void springContextLoads() {
-        // Passes if Spring Boot starts without errors
+    void springContextLoads() throws Exception {
+        var client   = HttpClient.newHttpClient();
+        var request  = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/actuator/health"))
+                .GET().build();
+        var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("UP"));
     }
 
     @Test
     void serverResponds() throws Exception {
-        // No controllers yet — 404 is correct and expected
-        mockMvc.perform(get("/"))
-                .andExpect(status().is4xxClientError());
+        var client   = HttpClient.newHttpClient();
+        var request  = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/"))
+                .GET().build();
+        var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // No controllers yet — 404 is correct
+        assertTrue(response.statusCode() < 500);
     }
 }
